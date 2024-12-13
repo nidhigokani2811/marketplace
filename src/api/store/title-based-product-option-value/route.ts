@@ -5,65 +5,58 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     try {
         const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
 
-
-        // Validate and retrieve title from query
-        const title = Array.isArray(req.query.title) ? req.query.title[0] : req.query.title;
-        if (!title || typeof title !== 'string') {
-            return res.status(400).json({ error: "Title is required and must be a string." });
-        }
-
         const { data: productOptions, metadata } = await query.graph({
             entity: "product_option",
             fields: ["id", "title", "values.*"],
-            filters: {
-                title: { $ilike: title },
-                deleted_at: { $eq: null },
-            },
             pagination: {
                 skip: 0,
                 take: 10,
             },
         });
-        // const t = await query.graph({
-        //     entity: "product_option",
-        //     fields: ["*"],
-        //     filters: {
-        //         deleted_at: { $eq: null },
-        //     },
-        // });
 
-        const productOptionIds = productOptions.map(option => option.id);
+        // Group and format the data
+        const groupedOptions = productOptions.reduce((acc, option) => {
+            const title = option.title.toLowerCase();
 
-        // const d = await query.graph({
-        //     entity: "value",
-        //     fields: ["id", "value", "created_at", "updated_at", "option_id"],
-        //     filters: {
-        //         option_id: { $in: productOptionIds },
-        //         deleted_at: { $eq: null },
-        //     },
-        //     pagination: {
-        //         skip: 0,
-        //         take: 10,
-        //     }
-        // });
+            if (!acc[title]) {
+                acc[title] = {
+                    title: option.title,
+                    option_id: [],
+                    values: []
+                };
+            }
 
-        // const groupedValues = productOptionValues.reduce((acc, value) => {
-        //     if (!acc[value.option_id]) {
-        //         acc[value.option_id] = [];
-        //     }
-        //     acc[value.option_id].push(value);
-        //     return acc;
-        // }, {});
+            // Add option_id
+            acc[title].option_id.push(option.id);
 
-        // const productOptionDetails = productOptions.map(option => ({
-        //     ...option,
-        //     values: groupedValues[option.id] || [],
-        // }));
+            // Process values
+            option.values.forEach(val => {
+                const lowerValue = val.value.toLowerCase();
+                const existingValue = acc[title].values.find(v =>
+                    v.value.toLowerCase() === lowerValue
+                );
 
-        res.json({
-            product_option_values: productOptions,
-            pagination: metadata,
-        });
+                if (existingValue) {
+                    // Add value_id if not already present
+                    if (!existingValue.value_id.includes(val.id)) {
+                        existingValue.value_id.push(val.id);
+                    }
+                } else {
+                    // Create new value entry
+                    acc[title].values.push({
+                        value_id: [val.id],
+                        value: val.value
+                    });
+                }
+            });
+
+            return acc;
+        }, {});
+
+        // Convert to array and take first entry (assuming you want one object per title)
+        const formattedResults = Object.values(groupedOptions);
+
+        res.json(formattedResults);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

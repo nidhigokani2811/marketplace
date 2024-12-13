@@ -16,6 +16,18 @@ module.exports = defineConfig({
   modules: [
     {
       resolve: "./src/modules/wishlist",
+      options: {},
+      key: "wishlist"
     },
+    {
+      resolve: "./src/modules/brand",
+      options: {},
+      key: "brand"
+    },
+    {
+      resolve: "./src/modules/product-filter",
+      options: {},
+      key: "product-filter"
+    }
   ],
 })
