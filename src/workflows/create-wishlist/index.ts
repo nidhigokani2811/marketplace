@@ -31,7 +31,8 @@ export type CreateProductOptionFilterInput = {
     limit?: number,
     page?: number,
     avilableStock?: boolean,
-    isDiscountAvailable?: boolean
+    isDiscountAvailable?: boolean,
+    region_id?: string
 }
 
 export const CreateWishlistWorkflow = createWorkflow(

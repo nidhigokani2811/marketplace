@@ -26,6 +26,7 @@ export const GET = async (
                 : [],
             sort_by: req.query.sort_by as string || 'created_at',
             sort_order: (req.query.sort_order as string || 'desc'),
+            region_id: req.query.region_id as string || null,
             limit: parseInt(req.query.limit as string) || 10,
             page: parseInt(req.query.page as string) || 0,
             avilableStock: req.query.avilable_stock ? (req.query.avilable_stock.toString().toLowerCase() == "true" ? true : false) : false,
@@ -33,7 +34,7 @@ export const GET = async (
         };
         const options = { input: filters };
         const validSortOptions = ['price', 'updated_at'];
-        console.log("🚀 ~ filters:", filters.collection_ids)
+
         if (!validSortOptions.includes(filters.sort_by)) {
             filters.sort_by = 'updated_at';
         }

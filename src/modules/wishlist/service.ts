@@ -18,7 +18,8 @@ interface FilterOptions {
     limit?: number
     page?: number,
     avilableStock?: boolean,
-    isDiscountAvailable?: boolean
+    isDiscountAvailable?: boolean,
+    region_id?: string
 }
 
 class WishlistModuleService extends MedusaService({
@@ -43,7 +44,7 @@ class WishlistModuleService extends MedusaService({
         return input;
     }
 
-    private getCommonCTEs(transformedGroups: string[]): string {
+    private getCommonCTEs(transformedGroups: string[], regionId: string): string {
         return `
             WITH variant_options AS (
                 SELECT 
@@ -106,7 +107,7 @@ class WishlistModuleService extends MedusaService({
             region_currency AS (
                 SELECT currency_code
                 FROM region
-                WHERE id = 'reg_01JETAWKR14PEEJ9P3BR77KXA9'
+                WHERE id = '${regionId}'
                 AND deleted_at IS NULL
             ),
             active_prices AS (
@@ -280,7 +281,7 @@ class WishlistModuleService extends MedusaService({
         const minPrice = filters?.price_range?.min
         const maxPrice = filters?.price_range?.max
         const optionValue = filters?.option_value || []
-
+        const regionId = filters?.region_id
         const transformedGroups = optionValue.map((group) => {
             const parsedGroup = JSON.parse(group as unknown as string)
             return `(ARRAY[${parsedGroup.map(option => `'${option}'`).join(', ')}])`
@@ -305,7 +306,7 @@ class WishlistModuleService extends MedusaService({
         try {
             const [count, products] = await Promise.all([
                 sharedContext.manager.execute(`
-                    ${this.getCommonCTEs(transformedGroups)}
+                    ${this.getCommonCTEs(transformedGroups, regionId)}
                     SELECT COUNT(*) FROM (
                         SELECT 
                             p.id as product_id
@@ -317,7 +318,7 @@ class WishlistModuleService extends MedusaService({
                             p.id, p.title, p.description, p.status, p.updated_at, pe.max_price, p.collection_id
                     ) as count`),
                 sharedContext.manager.execute(`
-                    ${this.getCommonCTEs(transformedGroups)}
+                    ${this.getCommonCTEs(transformedGroups, regionId)}
                     SELECT 
                         p.id as product_id,
                         p.title as product_title,
@@ -369,7 +370,6 @@ class WishlistModuleService extends MedusaService({
                         ${sortBy === 'price' ? 'pe.max_price' : 'p.updated_at'} ${sortOrder} NULLS LAST
                     LIMIT ${limit} OFFSET ${offset}`)
             ])
-            console.log('products:::', products.length);
 
             return {
                 products,
