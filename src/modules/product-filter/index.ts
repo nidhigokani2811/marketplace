@@ -1,7 +1,8 @@
 import { Module } from "@medusajs/framework/utils"
-import HelloModuleService from "./service"
+import ProductFilterModuleService from "./service"
 
+export const PRODUCT_FILTER_MODULE = "product-filter"
 
-export default ({
-    service: HelloModuleService,
+export default Module(PRODUCT_FILTER_MODULE, {
+    service: ProductFilterModuleService,
 })  
